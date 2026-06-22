@@ -1,8 +1,7 @@
+import { Navigate } from "react-router-dom";
+import { AUTH_ENABLED } from "../config";
+
 export default function Login() {
-  return (
-    <div>
-      <h1>Login</h1>
-      <button>Continue with Google</button>
-    </div>
-  );
+  if (!AUTH_ENABLED) return <Navigate to="/dashboard" replace />;
+  return <Navigate to="/" replace />;
 }
