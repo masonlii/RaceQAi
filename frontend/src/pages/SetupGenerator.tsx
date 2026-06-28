@@ -1,12 +1,16 @@
 import { useState } from "react";
 import { supabase } from "../services/supabase";
+import { useAuth } from "../context/AuthContext";
+import PageHeader from "../components/PageHeader";
 
 export default function SetupGenerator() {
+  const { user } = useAuth();
   const [track, setTrack] = useState("");
   const [car, setCar] = useState("");
   const [weather, setWeather] = useState("");
   const [drivingStyle, setDrivingStyle] = useState("");
   const [setup, setSetup] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   const generateSetup = () => {
     setSetup(`
@@ -24,112 +28,103 @@ Tire Pressure: Medium
 
 Notes:
 This setup is optimized for ${weather} conditions and a ${drivingStyle} driving style.
-    `);
+    `.trim());
   };
 
   const saveSetup = async () => {
-    const { data: userData } = await supabase.auth.getUser();
-
-    if (!userData.user) {
+    if (!supabase || !user) {
       alert("You must be logged in.");
       return;
     }
 
-    if (!setup) {
-      alert("Generate a setup first.");
+    if (!setup || !track.trim() || !car.trim()) {
+      alert("Enter track and car, then generate a setup first.");
       return;
     }
 
-    const { error } = await supabase
-      .from("setups")
-      .insert([
-        {
-          user_id: userData.user.id,
-          track,
-          car,
-          weather,
-          driving_style: drivingStyle,
-          setup_data: setup,
-        },
-      ]);
+    const { error: insertError } = await supabase.from("setups").insert({
+      user_id: user.id,
+      name: `${track.trim()} — ${car.trim()}`,
+      track: track.trim(),
+      car: car.trim(),
+      weather: weather.trim() || null,
+      driving_style: drivingStyle.trim() || null,
+      setup_data: setup,
+      notes: setup,
+    });
 
-    if (error) {
-      alert(error.message);
+    if (insertError) {
+      setError(insertError.message);
       return;
     }
 
+    setError(null);
     alert("Setup saved successfully!");
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white p-10">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-5xl font-bold mb-8">
-          AI Setup Generator
-        </h1>
+    <div>
+      <PageHeader
+        eyebrow="AI tools"
+        title="Setup generator"
+        description="Generate a starter setup, then save it to your vault."
+      />
 
-        <div className="bg-slate-900 p-6 rounded-xl">
-          <div className="space-y-4">
+      <div className="glass-card max-w-4xl p-6">
+        <div className="space-y-4">
+          <input
+            className="field mb-0 w-full"
+            placeholder="Track"
+            value={track}
+            onChange={(e) => setTrack(e.target.value)}
+          />
 
-            <input
-              className="w-full p-3 rounded bg-slate-800"
-              placeholder="Track"
-              value={track}
-              onChange={(e) => setTrack(e.target.value)}
-            />
+          <input
+            className="field mb-0 w-full"
+            placeholder="Car"
+            value={car}
+            onChange={(e) => setCar(e.target.value)}
+          />
 
-            <input
-              className="w-full p-3 rounded bg-slate-800"
-              placeholder="Car"
-              value={car}
-              onChange={(e) => setCar(e.target.value)}
-            />
+          <input
+            className="field mb-0 w-full"
+            placeholder="Weather"
+            value={weather}
+            onChange={(e) => setWeather(e.target.value)}
+          />
 
-            <input
-              className="w-full p-3 rounded bg-slate-800"
-              placeholder="Weather"
-              value={weather}
-              onChange={(e) => setWeather(e.target.value)}
-            />
+          <input
+            className="field mb-0 w-full"
+            placeholder="Driving style"
+            value={drivingStyle}
+            onChange={(e) => setDrivingStyle(e.target.value)}
+          />
 
-            <input
-              className="w-full p-3 rounded bg-slate-800"
-              placeholder="Driving Style"
-              value={drivingStyle}
-              onChange={(e) => setDrivingStyle(e.target.value)}
-            />
-
-            <div className="flex gap-4">
-              <button
-                onClick={generateSetup}
-                className="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg"
-              >
-                Generate Setup
-              </button>
-
-              <button
-                onClick={saveSetup}
-                className="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg"
-              >
-                Save Setup
-              </button>
-            </div>
-
+          <div className="flex flex-wrap gap-4">
+            <button type="button" className="btn btn-primary" onClick={generateSetup}>
+              Generate setup
+            </button>
+            <button type="button" className="btn" onClick={saveSetup}>
+              Save setup
+            </button>
           </div>
         </div>
-
-        {setup && (
-          <div className="bg-slate-900 p-6 rounded-xl mt-8">
-            <h2 className="text-2xl font-bold mb-4">
-              Generated Setup
-            </h2>
-
-            <pre className="whitespace-pre-wrap text-slate-300">
-              {setup}
-            </pre>
-          </div>
-        )}
       </div>
+
+      {error && (
+        <p className="mt-4 text-sm text-rose-400" role="alert">
+          {error}
+        </p>
+      )}
+
+      {setup && (
+        <div className="glass-card mt-6 max-w-4xl p-6">
+          <h2 className="mb-4 text-2xl">Generated setup</h2>
+          <pre className="whitespace-pre-wrap text-[var(--color-muted)]">
+            {setup}
+          </pre>
+        </div>
+      )}
     </div>
   );
 }

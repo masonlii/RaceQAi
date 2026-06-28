@@ -34,14 +34,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!AUTH_ENABLED || !supabase) return;
 
-    supabase.auth.getSession().then(({ data }) => {
+    const client = supabase;
+
+    client.auth.getSession().then(({ data }) => {
       setSession(data.session);
       setLoading(false);
     });
 
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, newSession) => {
+    const { data: listener } = client.auth.onAuthStateChange(
+      async (event, newSession) => {
         setSession(newSession);
+
+        if (event === "SIGNED_IN" && newSession?.user) {
+          await client.from("profiles").upsert({
+            id: newSession.user.id,
+            email: newSession.user.email ?? null,
+          });
+        }
       }
     );
 
