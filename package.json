@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
   "name": "raceiq-ai",
   "private": true,
   "version": "0.0.0",
@@ -7,5 +8,10 @@
     "build": "npm run build --prefix frontend",
     "lint": "npm run lint --prefix frontend",
     "install:frontend": "npm install --prefix frontend"
+=======
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.1",
+    "tailwindcss": "^4.3.1"
+>>>>>>> 24d2f35 (Push all current workspace changes)
   }
 }
